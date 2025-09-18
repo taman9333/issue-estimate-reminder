@@ -96,3 +96,28 @@ Add new feature
 Estimate: 3 days
 ```
 → App should NOT comment
+
+## How It Works - Logic Flow
+
+This flowchart shows the app's decision process when receiving GitHub webhooks:
+
+```mermaid
+flowchart TD
+  A[GitHub Issue Created] --> B[Webhook received via ngrok]
+  B --> C{Valid signature?}
+  C -->|No| D[Return 401]
+  C -->|Yes| E{Event = 'issues'?}
+  E -->|No| F[Ignore - Return 200]
+  E -->|Yes| G{Action = 'opened'?}
+  G -->|No| F
+  G -->|Yes| H{Has estimate?}
+  H -->|Yes| I[Do nothing - Return 200]
+  H -->|No| J[Authenticate with GitHub]
+  J --> K[Post reminder comment]
+  K --> L[Return 200]
+  
+  style A fill:#e1f5fe
+  style H fill:#fff3e0
+  style K fill:#e8f5e8
+  style D fill:#ffebee
+```
