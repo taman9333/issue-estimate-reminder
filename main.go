@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -148,10 +149,23 @@ func (a *App) verifySignature(payload []byte, signature string) bool {
 	return hmac.Equal([]byte(signature), []byte(expected))
 }
 
-// TODO: need to comback to this
 func (a *App) handleIssueOpened(payload *github.IssuesEvent) error {
 	issue := payload.GetIssue()
-	log.Printf("New issue opened: #%d - %s", issue.GetNumber(), issue.GetTitle())
-	log.Printf("Issue body preview: %.100s...", issue.GetBody())
+
+	log.Printf("Processing issue #%d: %s", issue.GetNumber(), issue.GetTitle())
+
+	if a.hasEstimate(issue.GetBody()) {
+		log.Printf("Issue #%d has an estimate", issue.GetNumber())
+		return nil
+	}
+
+	log.Printf("Issue #%d missing estimate", issue.GetNumber())
+	// TODO: post comment
 	return nil
+}
+
+func (a *App) hasEstimate(body string) bool {
+	// check for "Estimate: X days" format (case insensitive)
+	estimatePattern := regexp.MustCompile(`(?i)estimate:\s*\d+(?:\.\d+)?\s*days?`)
+	return estimatePattern.MatchString(body)
 }
