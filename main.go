@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/go-github/github"
 	"github.com/joho/godotenv"
 )
 
@@ -80,6 +82,36 @@ func (a *App) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	eventType := r.Header.Get("X-GitHub-Event")
 	log.Printf("Received %s event with body: %s", eventType, string(body))
 
+	if eventType != "issues" {
+		log.Printf("Ignoring %s event", eventType)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	var payload github.IssuesEvent
+	if err := json.Unmarshal(body, &payload); err != nil {
+		log.Printf("Error unmarshaling payload: %v", err)
+		http.Error(w, "Error parsing payload", http.StatusBadRequest)
+		return
+	}
+
+	// only handle "opened" action based on the assessment's requirements
+	if payload.GetAction() != "opened" {
+		log.Printf("Ignoring issues %s action", payload.GetAction())
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	log.Printf("Processing new issue #%d: %s",
+		payload.GetIssue().GetNumber(),
+		payload.GetIssue().GetTitle())
+
+	if err := a.handleIssueOpened(&payload); err != nil {
+		log.Printf("Error handling issue opened event: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -114,4 +146,12 @@ func (a *App) verifySignature(payload []byte, signature string) bool {
 	expected := hex.EncodeToString(mac.Sum(nil))
 
 	return hmac.Equal([]byte(signature), []byte(expected))
+}
+
+// TODO: need to comback to this
+func (a *App) handleIssueOpened(payload *github.IssuesEvent) error {
+	issue := payload.GetIssue()
+	log.Printf("New issue opened: #%d - %s", issue.GetNumber(), issue.GetTitle())
+	log.Printf("Issue body preview: %.100s...", issue.GetBody())
+	return nil
 }
