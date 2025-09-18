@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -22,6 +23,7 @@ func main() {
 	}
 
 	http.HandleFunc("/health", handleHealth)
+	http.HandleFunc("/webhook", handleWebhook)
 
 	log.Printf("Server starting on port %s", config.Port)
 	log.Fatal(http.ListenAndServe(":"+config.Port, nil))
@@ -30,6 +32,25 @@ func main() {
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading request body: %v", err)
+		http.Error(w, "Error reading request body", http.StatusBadRequest)
+		return
+	}
+
+	eventType := r.Header.Get("X-GitHub-Event")
+	log.Printf("Received %s event with body: %s", eventType, string(body))
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func getEnv(key, defaultValue string) string {
