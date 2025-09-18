@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,8 +14,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/google/go-github/github"
+	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/google/go-github/v74/github"
 	"github.com/joho/godotenv"
 )
 
@@ -168,4 +172,51 @@ func (a *App) hasEstimate(body string) bool {
 	// check for "Estimate: X days" format (case insensitive)
 	estimatePattern := regexp.MustCompile(`(?i)estimate:\s*\d+(?:\.\d+)?\s*days?`)
 	return estimatePattern.MatchString(body)
+}
+
+func (a *App) generateJWT() (string, error) {
+	keyData, err := os.ReadFile(a.config.PrivateKeyPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read private key: %v", err)
+	}
+
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse private key: %v", err)
+	}
+
+	now := time.Now()
+	claims := jwt.MapClaims{
+		"iss": a.config.AppID,
+		"iat": now.Unix(),
+		"exp": now.Add(10 * time.Minute).Unix(), // TODO: check later when this expires
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	tokenString, err := token.SignedString(key)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign token: %v", err)
+	}
+
+	return tokenString, nil
+}
+
+func (a *App) createInstallationClient(installationID int64) (*github.Client, error) {
+	token, err := a.generateJWT()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate JWT: %v", err)
+	}
+
+	appClient := github.NewClient(nil).WithAuthToken(token)
+
+	installationToken, _, err := appClient.Apps.CreateInstallationToken(
+		context.Background(),
+		installationID,
+		&github.InstallationTokenOptions{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create installation token: %v", err)
+	}
+
+	return github.NewClient(nil).WithAuthToken(installationToken.GetToken()), nil
 }
