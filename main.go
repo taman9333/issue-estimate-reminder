@@ -5,12 +5,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port string
+	AppID          int64
+	PrivateKeyPath string
+	WebhookSecret  string
+	Port           string
 }
 
 func main() {
@@ -19,7 +23,17 @@ func main() {
 	}
 
 	config := Config{
-		Port: getEnv("PORT", "8080"),
+		AppID:          getEnvAsInt("GITHUB_APP_ID"),
+		PrivateKeyPath: getEnv("GITHUB_PRIVATE_KEY_PATH", "./app.pem"),
+		WebhookSecret:  getEnv("WEBHOOK_SECRET", ""),
+		Port:           getEnv("PORT", "8080"),
+	}
+
+	if config.AppID == 0 {
+		log.Fatal("GITHUB_APP_ID is required")
+	}
+	if config.WebhookSecret == "" {
+		log.Fatal("WEBHOOK_SECRET is required")
 	}
 
 	http.HandleFunc("/health", handleHealth)
@@ -58,4 +72,13 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsInt(key string) int64 {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return intValue
+		}
+	}
+	return 0
 }
