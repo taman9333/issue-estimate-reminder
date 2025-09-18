@@ -155,6 +155,12 @@ func (a *App) verifySignature(payload []byte, signature string) bool {
 
 func (a *App) handleIssueOpened(payload *github.IssuesEvent) error {
 	issue := payload.GetIssue()
+	repo := payload.GetRepo()
+	installation := payload.GetInstallation()
+
+	if installation == nil {
+		return fmt.Errorf("no installation found in payload")
+	}
 
 	log.Printf("Processing issue #%d: %s", issue.GetNumber(), issue.GetTitle())
 
@@ -163,8 +169,28 @@ func (a *App) handleIssueOpened(payload *github.IssuesEvent) error {
 		return nil
 	}
 
-	log.Printf("Issue #%d missing estimate", issue.GetNumber())
-	// TODO: post comment
+	client, err := a.createInstallationClient(installation.GetID())
+	if err != nil {
+		return fmt.Errorf("failed to create installation client: %v", err)
+	}
+
+	comment := &github.IssueComment{
+		Body: &reminderMessage,
+	}
+
+	_, _, err = client.Issues.CreateComment(
+		context.Background(),
+		repo.GetOwner().GetLogin(),
+		repo.GetName(),
+		issue.GetNumber(),
+		comment,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to create comment: %v", err)
+	}
+
+	log.Printf("Posted reminder comment on issue #%d", issue.GetNumber())
 	return nil
 }
 
