@@ -58,22 +58,6 @@ func (mr *MockGitHubClientInterfaceMockRecorder) CreateComment(ctx, owner, repo,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateComment", reflect.TypeOf((*MockGitHubClientInterface)(nil).CreateComment), ctx, owner, repo, number, comment)
 }
 
-// CreateInstallationToken mocks base method.
-func (m *MockGitHubClientInterface) CreateInstallationToken(ctx context.Context, installationID int64, opts *github.InstallationTokenOptions) (*github.InstallationToken, *github.Response, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateInstallationToken", ctx, installationID, opts)
-	ret0, _ := ret[0].(*github.InstallationToken)
-	ret1, _ := ret[1].(*github.Response)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// CreateInstallationToken indicates an expected call of CreateInstallationToken.
-func (mr *MockGitHubClientInterfaceMockRecorder) CreateInstallationToken(ctx, installationID, opts any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstallationToken", reflect.TypeOf((*MockGitHubClientInterface)(nil).CreateInstallationToken), ctx, installationID, opts)
-}
-
 // MockGitHubFactoryInterface is a mock of GitHubFactoryInterface interface.
 type MockGitHubFactoryInterface struct {
 	ctrl     *gomock.Controller
@@ -96,21 +80,6 @@ func NewMockGitHubFactoryInterface(ctrl *gomock.Controller) *MockGitHubFactoryIn
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockGitHubFactoryInterface) EXPECT() *MockGitHubFactoryInterfaceMockRecorder {
 	return m.recorder
-}
-
-// CreateAppClient mocks base method.
-func (m *MockGitHubFactoryInterface) CreateAppClient() (github0.GitHubClientInterface, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateAppClient")
-	ret0, _ := ret[0].(github0.GitHubClientInterface)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateAppClient indicates an expected call of CreateAppClient.
-func (mr *MockGitHubFactoryInterfaceMockRecorder) CreateAppClient() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAppClient", reflect.TypeOf((*MockGitHubFactoryInterface)(nil).CreateAppClient))
 }
 
 // CreateInstallationClient mocks base method.

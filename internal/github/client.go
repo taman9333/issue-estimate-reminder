@@ -10,7 +10,7 @@ import (
 
 type Client struct {
 	config *config.Config
-	auth   *Auth
+	auth   AuthInterface
 }
 
 func New(cfg *config.Config) *Client {
@@ -20,7 +20,14 @@ func New(cfg *config.Config) *Client {
 	}
 }
 
-func (c *Client) CreateInstallationClient(installationID int64) (*github.Client, error) {
+func NewWithAuth(cfg *config.Config, auth AuthInterface) *Client {
+	return &Client{
+		config: cfg,
+		auth:   auth,
+	}
+}
+
+func (c *Client) CreateInstallationClient(installationID int64) (GitHubClientInterface, error) {
 	token, err := c.auth.GenerateJWT()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate JWT: %v", err)
@@ -37,5 +44,6 @@ func (c *Client) CreateInstallationClient(installationID int64) (*github.Client,
 		return nil, fmt.Errorf("failed to create installation token: %v", err)
 	}
 
-	return github.NewClient(nil).WithAuthToken(installationToken.GetToken()), nil
+	client := github.NewClient(nil).WithAuthToken(installationToken.GetToken())
+	return NewGitHubClientWrapper(client), nil
 }

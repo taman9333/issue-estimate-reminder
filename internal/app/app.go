@@ -13,7 +13,7 @@ import (
 
 type App struct {
 	config       *config.Config
-	githubClient *githubclient.Client
+	githubClient githubclient.GitHubFactoryInterface
 }
 
 var reminderMessage = `Hello! Please add a time estimate to this issue.
@@ -28,6 +28,13 @@ func New(cfg *config.Config) *App {
 	return &App{
 		config:       cfg,
 		githubClient: githubclient.New(cfg),
+	}
+}
+
+func NewWithGitHubClient(cfg *config.Config, githubClient githubclient.GitHubFactoryInterface) *App {
+	return &App{
+		config:       cfg,
+		githubClient: githubClient,
 	}
 }
 
@@ -56,7 +63,7 @@ func (a *App) HandleIssueOpened(payload *github.IssuesEvent) error {
 		Body: &reminderMessage,
 	}
 
-	_, _, err = client.Issues.CreateComment(
+	_, _, err = client.CreateComment(
 		context.Background(),
 		repo.GetOwner().GetLogin(),
 		repo.GetName(),
