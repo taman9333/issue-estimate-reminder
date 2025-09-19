@@ -7,19 +7,15 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v74/github"
+	"github.com/taman9333/issue-estimate-reminder/internal/app"
 	"github.com/taman9333/issue-estimate-reminder/internal/utils"
 )
 
 type WebhookHandler struct {
-	app AppInterface
+	app app.AppInterface // Use app.AppInterface instead of local interface
 }
 
-type AppInterface interface {
-	HandleIssueOpened(payload *github.IssuesEvent) error
-	GetWebhookSecret() string
-}
-
-func NewWebhookHandler(app AppInterface) *WebhookHandler {
+func NewWebhookHandler(app app.AppInterface) *WebhookHandler {
 	return &WebhookHandler{app: app}
 }
 
