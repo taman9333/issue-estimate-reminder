@@ -8,6 +8,25 @@ A GitHub app that automatically detects when a new GitHub issue is created and p
 * `main-before-refactoring` - Original implementation before refactoring (same functionality, different structure)
 * `main-with-improvements` - Post-deadline enhancements and optimizations (built on top of `main`)
 
+## Improvements to be added for the app to be production ready
+
+### **Not Implemented: Idempotency Protection**
+
+Since GitHub's webhook delivery is at-least-once, same event can arrive multiple times due to retries or timeouts.
+
+**Solution**: Redis-based idempotency using GitHub's `X-GitHub-Delivery` ID
+
+
+### **Not Implemented: Queue-Based Background Processing**
+
+We might face 2 problems with the current implementation:
+1. **GitHub API is down**: then we will not be able to post a comment on the issue & event will be lost
+2. **Event Loss During Deployments & Server failures**:
+We might solve the first issue by introducing a retry mechanism with exponential backoff, however this might lead to server resources exhaustion in case we have a lot of retries as each webhook holds a goroutine for minutes.
+
+**Solution**: Handle event processing async using a queueing system with Exponential backoff retry logic
+
+
 ## Architecture
 
 This project follows the [standard Go project layout](https://github.com/golang-standards/project-layout)
