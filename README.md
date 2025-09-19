@@ -2,6 +2,11 @@
 
 A GitHub app that automatically detects when a new GitHub issue is created and posts a comment to remind the issue creator to provide a time estimate if it's missing.
 
+## Branch Information
+
+* `main` - Current branch with refactored code following standard Go project layout
+* `main-before-refactoring` - Original implementation before refactoring (same functionality, different structure)
+
 ## Prerequisites
 
 ### Option 1 - Local Go Development:
