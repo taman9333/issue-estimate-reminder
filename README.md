@@ -4,18 +4,21 @@ A GitHub app that automatically detects when a new GitHub issue is created and p
 
 ## Prerequisites
 
+### Option 1 - Local Go Development:
+
 - Go 1.24
 - GitHub account
 - ngrok (creates secure tunnels from the public internet to your local machine)
 
-## Dependencies
+### Option 2 - Use **Docker** isntead of Local Go Development
+
+## Setup
+
+### Option 1: Local Go Development
 
 ```bash
-go mod init github.com/yourusername/issue-estimate-reminder
-go get github.com/google/go-github/v56/github
-go get github.com/golang-jwt/jwt/v5
-go get github.com/joho/godotenv
-go get golang.org/x/oauth2
+go mod init github.com/taman9333/issue-estimate-reminder
+go mod tidy
 ```
 
 ## Step 1: Install ngrok
@@ -63,6 +66,8 @@ PORT=8080
 
 ## Step 4: Run Application
 
+### Option 1: Using Go directly:
+
 **Terminal 1:**
 ```bash
 go run cmd/server/main.go
@@ -72,6 +77,23 @@ go run cmd/server/main.go
 ```bash
 ngrok http 8080
 ```
+
+---
+
+### Option 2: Using Docker
+
+**Terminal 1:**
+```bash
+docker build -t github-issue-reminder .
+docker run -p 8080:8080 --env-file .env -v $(pwd)/app.pem:/root/app.pem:ro github-issue-reminder
+```
+
+**Terminal 2:**
+```bash
+ngrok http 8080
+```
+
+---
 
 Copy ngrok URL and update GitHub App webhook URL to the one ngrok gave to you: `https://your-ngrok-url/webhook`
 
