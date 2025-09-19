@@ -6,6 +6,15 @@ A GitHub app that automatically detects when a new GitHub issue is created and p
 
 * `main` - Current branch with refactored code following standard Go project layout
 * `main-before-refactoring` - Original implementation before refactoring (same functionality, different structure)
+* `main-with-improvements` - Post-deadline enhancements and optimizations (built on top of `main`)
+
+## Architecture
+
+This project follows the [standard Go project layout](https://github.com/golang-standards/project-layout)
+
+- `/cmd` - Application entry points
+- `/internal` - Private application code  
+- Tests use dependency injection for easy mocking and integration testing
 
 ## Prerequisites
 
