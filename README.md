@@ -65,7 +65,7 @@ PORT=8080
 
 **Terminal 1:**
 ```bash
-go run main.go
+go run cmd/server/main.go
 ```
 
 **Terminal 2:**

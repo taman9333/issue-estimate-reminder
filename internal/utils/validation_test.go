@@ -1,15 +1,12 @@
-package main
+package utils
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"testing"
+
+	"github.com/taman9333/issue-estimate-reminder/test/testutils"
 )
 
 func TestHasEstimate(t *testing.T) {
-	app := &App{}
-
 	tests := []struct {
 		name     string
 		body     string
@@ -39,7 +36,7 @@ func TestHasEstimate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := app.hasEstimate(tt.body)
+			result := HasEstimate(tt.body)
 			if result != tt.expected {
 				t.Errorf("hasEstimate() = %v, expected %v for body: %s", result, tt.expected, tt.body)
 			}
@@ -47,47 +44,39 @@ func TestHasEstimate(t *testing.T) {
 	}
 }
 
-func TestVerifySignature(t *testing.T) {
+func TestVerifyWebhookSignature(t *testing.T) {
 	payload := `{"test":"data"}`
 	webhookSecret := "test_secret"
-	app := &App{
-		config: Config{
-			WebhookSecret: webhookSecret,
-		},
-	}
 
 	tests := []struct {
 		name      string
 		payload   string
 		signature string
+		secret    string
 		expected  bool
 	}{
 		{
 			name:      "Valid signature",
 			payload:   payload,
-			signature: generateSignature([]byte(payload), webhookSecret),
+			signature: testutils.GenerateWebhookSignature([]byte(payload), webhookSecret),
+			secret:    webhookSecret,
 			expected:  true,
 		},
 		{
 			name:      "Invalid signature",
 			payload:   payload,
 			signature: "sha256=invalid_signature",
+			secret:    webhookSecret,
 			expected:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := app.verifySignature([]byte(tt.payload), tt.signature)
+			result := VerifyWebhookSignature([]byte(tt.payload), tt.signature, tt.secret)
 			if result != tt.expected {
-				t.Errorf("verifySignature() = %v, expected %v", result, tt.expected)
+				t.Errorf("VerifyWebhookSignature() = %v, expected %v", result, tt.expected)
 			}
 		})
 	}
-}
-
-func generateSignature(payload []byte, secret string) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
-	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 }
