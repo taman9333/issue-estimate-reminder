@@ -7,6 +7,8 @@ A GitHub app that automatically detects when a new GitHub issue is created and p
 * `main` - Current branch with refactored code following standard Go project layout
 * `main-before-refactoring` - Original implementation before refactoring (same functionality, different structure)
 * `main-with-improvements` - Post-deadline enhancements and optimizations (built on top of `main`)
+  - **Enhanced dependency injection**: Fixed GitHub pkg interfaces to enable proper mocking & app testing
+  - **GitHub token caching**: Avoid repeated JWT generation (file I/O + crypto operations) and unnecessary network calls (JWT → installation token → actual operation)
 
 ## Architecture
 
