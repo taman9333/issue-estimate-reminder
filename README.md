@@ -10,12 +10,13 @@ A GitHub app that automatically detects when a new GitHub issue is created and p
 
 ## Improvements to be added for the app to be production ready
 
-### **Not Implemented: Idempotency Protection**
+### **Idempotency Protection**
 
 Since GitHub's webhook delivery is at-least-once, same event can arrive multiple times due to retries or timeouts.
 
 **Solution**: Redis-based idempotency using GitHub's `X-GitHub-Delivery` ID
 
+![Idempotency Protection](images/idempotency.png)
 
 ### **Not Implemented: Queue-Based Background Processing**
 
@@ -117,8 +118,7 @@ ngrok http 8080
 
 **Terminal 1:**
 ```bash
-docker build -t github-issue-reminder .
-docker run -p 8080:8080 --env-file .env -v $(pwd)/app.pem:/root/app.pem:ro github-issue-reminder
+docker-compose up -d --build
 ```
 
 **Terminal 2:**

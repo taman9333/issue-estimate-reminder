@@ -10,10 +10,15 @@ import (
 )
 
 type Config struct {
+	Port string
+	// GitHub Configuration
 	AppID          int64
 	PrivateKeyPath string
 	WebhookSecret  string
-	Port           string
+	// Redis Configuration
+	RedisHost     string
+	RedisPort     string
+	RedisPassword string
 }
 
 func Load() (*Config, error) {
@@ -22,10 +27,15 @@ func Load() (*Config, error) {
 	}
 
 	config := &Config{
+		Port: getEnv("PORT", "8080"),
+
 		AppID:          getEnvAsInt("GITHUB_APP_ID"),
 		PrivateKeyPath: getEnv("GITHUB_PRIVATE_KEY_PATH", "./app.pem"),
 		WebhookSecret:  getEnv("WEBHOOK_SECRET", ""),
-		Port:           getEnv("PORT", "8080"),
+
+		RedisHost:     getEnv("REDIS_HOST", "localhost"),
+		RedisPort:     getEnv("REDIS_PORT", "6379"),
+		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 	}
 
 	if err := config.validate(); err != nil {
@@ -44,6 +54,10 @@ func (c *Config) validate() error {
 	}
 
 	return nil
+}
+
+func (c *Config) GetRedisAddr() string {
+	return fmt.Sprintf("%s:%s", c.RedisHost, c.RedisPort)
 }
 
 func getEnv(key, defaultValue string) string {

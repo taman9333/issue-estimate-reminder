@@ -5,23 +5,37 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/go-github/v74/github"
 	"github.com/taman9333/issue-estimate-reminder/internal/app"
+	"github.com/taman9333/issue-estimate-reminder/internal/idempotency"
 	"github.com/taman9333/issue-estimate-reminder/internal/utils"
 )
 
 type WebhookHandler struct {
-	app app.AppInterface // Use app.AppInterface instead of local interface
+	app         app.AppInterface
+	idempotency idempotency.Service
 }
 
-func NewWebhookHandler(app app.AppInterface) *WebhookHandler {
-	return &WebhookHandler{app: app}
+func NewWebhookHandler(app app.AppInterface,
+	idempotencySvc idempotency.Service) *WebhookHandler {
+	return &WebhookHandler{
+		app:         app,
+		idempotency: idempotencySvc,
+	}
 }
 
 func (h *WebhookHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	deliveryID := r.Header.Get("X-GitHub-Delivery")
+	if deliveryID == "" {
+		log.Println("Warning: No X-GitHub-Delivery header found")
+		http.Error(w, "Missing X-GitHub-Delivery header", http.StatusBadRequest)
 		return
 	}
 
@@ -60,6 +74,20 @@ func (h *WebhookHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check idempotency before processing
+	processed, err := h.idempotency.IsProcessed(r.Context(), deliveryID)
+	if err != nil {
+		log.Printf("Error checking idempotency: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if processed {
+		log.Printf("Webhook delivery %s already processed, skipping", deliveryID)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	log.Printf("Processing new issue #%d: %s",
 		payload.GetIssue().GetNumber(),
 		payload.GetIssue().GetTitle())
@@ -68,6 +96,13 @@ func (h *WebhookHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error handling issue opened event: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
+	}
+
+	// Mark as processed after successful handling
+	if err := h.idempotency.MarkProcessed(r.Context(), deliveryID, 7*24*time.Hour); err != nil {
+		log.Printf("Error marking delivery as processed: %v", err)
+	} else {
+		log.Printf("Marked delivery %s as processed", deliveryID)
 	}
 
 	w.WriteHeader(http.StatusOK)
