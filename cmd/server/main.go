@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/taman9333/issue-estimate-reminder/internal/app"
 	"github.com/taman9333/issue-estimate-reminder/internal/config"
 	"github.com/taman9333/issue-estimate-reminder/internal/handlers"
 	"github.com/taman9333/issue-estimate-reminder/internal/queue"
@@ -19,8 +18,8 @@ func main() {
 	queueClient := queue.NewClient(cfg.GetRedisAddr(), cfg.RedisPassword, 0)
 	defer queueClient.Close()
 
-	app := app.New(cfg)
-	webhookHandler := handlers.NewWebhookHandler(app, queueClient)
+	// app := app.New(cfg)
+	webhookHandler := handlers.NewWebhookHandler(cfg.WebhookSecret, queueClient)
 
 	http.HandleFunc("/health", handlers.Health)
 	http.HandleFunc("/webhook", webhookHandler.Handle)

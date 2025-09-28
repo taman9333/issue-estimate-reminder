@@ -9,6 +9,7 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/taman9333/issue-estimate-reminder/internal/app"
 	"github.com/taman9333/issue-estimate-reminder/internal/config"
+	"github.com/taman9333/issue-estimate-reminder/internal/github"
 	"github.com/taman9333/issue-estimate-reminder/internal/idempotency"
 	"github.com/taman9333/issue-estimate-reminder/internal/queue"
 	"github.com/taman9333/issue-estimate-reminder/internal/redis"
@@ -31,7 +32,8 @@ func main() {
 	idempotencySvc := idempotency.NewService(redisClient)
 
 	// App
-	application := app.New(cfg)
+	githubClient := github.New(cfg)
+	application := app.New(githubClient)
 
 	// Asynq server (worker)
 	srv := asynq.NewServer(

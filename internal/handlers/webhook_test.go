@@ -9,8 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/taman9333/issue-estimate-reminder/test/mocks/appmocks"
-	"github.com/taman9333/issue-estimate-reminder/test/mocks/queuemocks"
+	"github.com/taman9333/issue-estimate-reminder/test/mocks/handlersmocks"
 	"github.com/taman9333/issue-estimate-reminder/test/testutils"
 	"go.uber.org/mock/gomock"
 )
@@ -25,7 +24,6 @@ func TestWebhookHandler_Handle_Success(t *testing.T) {
 	signature := testutils.GenerateWebhookSignature(payloadBytes, "test_secret")
 
 	// Expectations
-	s.mockApp.EXPECT().GetWebhookSecret().Return("test_secret").Times(1)
 	s.mockQueue.EXPECT().
 		EnqueueWebhook(gomock.Any(), gomock.Any()).
 		Return(nil).
@@ -50,7 +48,6 @@ func TestWebhookHandler_Handle_EnqueueFailure(t *testing.T) {
 	signature := testutils.GenerateWebhookSignature(payloadBytes, "test_secret")
 
 	// Expectations
-	s.mockApp.EXPECT().GetWebhookSecret().Return("test_secret").Times(1)
 	s.mockQueue.EXPECT().
 		EnqueueWebhook(gomock.Any(), gomock.Any()).
 		Return(assert.AnError).
@@ -73,9 +70,6 @@ func TestWebhookHandler_Handle_InvalidSignature(t *testing.T) {
 	deliveryID := "test-delivery-invalid"
 	payload := testutils.CreateWebhookPayload("opened", "Invalid signature")
 
-	// Expectations
-	s.mockApp.EXPECT().GetWebhookSecret().Return("test_secret").Times(1)
-
 	// Execute
 	req := createTestRequest(t, payload, deliveryID, "sha256=invalid_signature", "issues")
 	recorder := httptest.NewRecorder()
@@ -95,8 +89,6 @@ func TestWebhookHandler_Handle_IgnoreNonIssuesEvent(t *testing.T) {
 	payloadBytes, _ := json.Marshal(payload)
 	signature := testutils.GenerateWebhookSignature(payloadBytes, "test_secret")
 
-	// Expectations
-	s.mockApp.EXPECT().GetWebhookSecret().Return("test_secret").Times(1)
 	// No queue expectation - should return before enqueuing
 
 	// Execute
@@ -128,20 +120,17 @@ func TestWebhookHandler_Handle_MissingDeliveryID(t *testing.T) {
 // Test helpers
 type testSetup struct {
 	ctrl      *gomock.Controller
-	mockApp   *appmocks.MockAppInterface
-	mockQueue *queuemocks.MockQueueClient
+	mockQueue *handlersmocks.MockWebhookEnqueuer
 	handler   *WebhookHandler
 }
 
 func setupTest(t *testing.T) *testSetup {
 	ctrl := gomock.NewController(t)
-	mockApp := appmocks.NewMockAppInterface(ctrl)
-	mockQueue := queuemocks.NewMockQueueClient(ctrl)
-	handler := NewWebhookHandler(mockApp, mockQueue)
+	mockQueue := handlersmocks.NewMockWebhookEnqueuer(ctrl)
+	handler := NewWebhookHandler("test_secret", mockQueue)
 
 	return &testSetup{
 		ctrl:      ctrl,
-		mockApp:   mockApp,
 		mockQueue: mockQueue,
 		handler:   handler,
 	}

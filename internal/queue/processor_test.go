@@ -9,8 +9,7 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
-	"github.com/taman9333/issue-estimate-reminder/test/mocks/appmocks"
-	"github.com/taman9333/issue-estimate-reminder/test/mocks/idempotencymocks"
+	"github.com/taman9333/issue-estimate-reminder/test/mocks/queuemocks"
 	"github.com/taman9333/issue-estimate-reminder/test/testutils"
 	"go.uber.org/mock/gomock"
 )
@@ -277,15 +276,15 @@ func TestWebhookProcessor_ProcessTask_WithEstimate(t *testing.T) {
 // Test helpers
 type processorTestSetup struct {
 	ctrl            *gomock.Controller
-	mockApp         *appmocks.MockAppInterface
-	mockIdempotency *idempotencymocks.MockService
+	mockApp         *queuemocks.MockIssueOpenedHandler
+	mockIdempotency *queuemocks.MockIdempotencyChecker
 	processor       *WebhookProcessor
 }
 
 func setupProcessorTest(t *testing.T) *processorTestSetup {
 	ctrl := gomock.NewController(t)
-	mockApp := appmocks.NewMockAppInterface(ctrl)
-	mockIdempotency := idempotencymocks.NewMockService(ctrl)
+	mockApp := queuemocks.NewMockIssueOpenedHandler(ctrl)
+	mockIdempotency := queuemocks.NewMockIdempotencyChecker(ctrl)
 	processor := NewWebhookProcessor(mockApp, mockIdempotency)
 
 	return &processorTestSetup{

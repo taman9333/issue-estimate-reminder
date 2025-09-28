@@ -9,16 +9,27 @@ import (
 
 	"github.com/google/go-github/v74/github"
 	"github.com/hibiken/asynq"
-	"github.com/taman9333/issue-estimate-reminder/internal/app"
-	"github.com/taman9333/issue-estimate-reminder/internal/idempotency"
 )
 
-type WebhookProcessor struct {
-	app         app.AppInterface
-	idempotency idempotency.Service
+//go:generate mockgen -destination=../../test/mocks/queuemocks/queue_mocks.go -package=queuemocks . IdempotencyChecker,IssueOpenedHandler
+
+// IdempotencyChecker is used for webhook processing
+type IdempotencyChecker interface {
+	IsProcessed(ctx context.Context, deliveryID string) (bool, error)
+	MarkProcessed(ctx context.Context, deliveryID string, ttl time.Duration) error
 }
 
-func NewWebhookProcessor(app app.AppInterface, idempotencySvc idempotency.Service) *WebhookProcessor {
+// IssueOpenedHandler defines the capability to handle a new GitHub issue opened event.
+type IssueOpenedHandler interface {
+	HandleIssueOpened(payload *github.IssuesEvent) error
+}
+
+type WebhookProcessor struct {
+	app         IssueOpenedHandler
+	idempotency IdempotencyChecker
+}
+
+func NewWebhookProcessor(app IssueOpenedHandler, idempotencySvc IdempotencyChecker) *WebhookProcessor {
 	return &WebhookProcessor{
 		app:         app,
 		idempotency: idempotencySvc,

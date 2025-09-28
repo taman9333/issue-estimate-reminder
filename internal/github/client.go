@@ -1,12 +1,13 @@
 package github
 
 import (
+	"github.com/taman9333/issue-estimate-reminder/internal/app"
 	"github.com/taman9333/issue-estimate-reminder/internal/config"
 )
 
 type Client struct {
 	config     *config.Config
-	auth       AuthInterface
+	auth       *Auth
 	tokenCache *TokenCache
 }
 
@@ -19,6 +20,6 @@ func New(cfg *config.Config) *Client {
 	}
 }
 
-func (c *Client) CreateInstallationClient(installationID int64) (GitHubClientInterface, error) {
+func (c *Client) CreateInstallationClient(installationID int64) (app.GitHubCommenter, error) {
 	return c.tokenCache.GetInstallationClient(installationID)
 }

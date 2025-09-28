@@ -6,17 +6,27 @@ import (
 	"log"
 
 	"github.com/google/go-github/v74/github"
-	"github.com/taman9333/issue-estimate-reminder/internal/config"
-	githubclient "github.com/taman9333/issue-estimate-reminder/internal/github"
 	"github.com/taman9333/issue-estimate-reminder/internal/utils"
 )
 
-type App struct {
-	config       *config.Config
-	githubClient githubclient.GitHubFactoryInterface
+//go:generate mockgen -destination=../../test/mocks/appmocks/app_mocks.go -package=appmocks . GitHubClientFactory,GitHubCommenter
+
+// GitHubClientFactory creates a GitHub client
+type GitHubClientFactory interface {
+	CreateInstallationClient(installationID int64) (GitHubCommenter, error)
 }
 
-var reminderMessage = `Hello! Please add a time estimate to this issue.
+// GitHubCommenter defines the capability to interact with issue/PR comments on GitHub
+type GitHubCommenter interface {
+	CreateComment(ctx context.Context, owner, repo string, number int,
+		comment *github.IssueComment) (*github.IssueComment, *github.Response, error)
+}
+
+type App struct {
+	githubFactory GitHubClientFactory
+}
+
+var ReminderMessage = `Hello! Please add a time estimate to this issue.
 
 Format: Estimate: X days
 
@@ -24,17 +34,9 @@ Example: Estimate: 3 days
 
 Thanks!`
 
-func New(cfg *config.Config) *App {
+func New(githubClientFactory GitHubClientFactory) *App {
 	return &App{
-		config:       cfg,
-		githubClient: githubclient.New(cfg),
-	}
-}
-
-func NewWithGitHubClient(cfg *config.Config, githubClient githubclient.GitHubFactoryInterface) *App {
-	return &App{
-		config:       cfg,
-		githubClient: githubClient,
+		githubFactory: githubClientFactory,
 	}
 }
 
@@ -54,13 +56,13 @@ func (a *App) HandleIssueOpened(payload *github.IssuesEvent) error {
 		return nil
 	}
 
-	client, err := a.githubClient.CreateInstallationClient(installation.GetID())
+	client, err := a.githubFactory.CreateInstallationClient(installation.GetID())
 	if err != nil {
 		return fmt.Errorf("failed to create installation client: %v", err)
 	}
 
 	comment := &github.IssueComment{
-		Body: &reminderMessage,
+		Body: &ReminderMessage,
 	}
 
 	_, _, err = client.CreateComment(
@@ -77,8 +79,4 @@ func (a *App) HandleIssueOpened(payload *github.IssuesEvent) error {
 
 	log.Printf("Posted reminder comment on issue #%d", issue.GetNumber())
 	return nil
-}
-
-func (a *App) GetWebhookSecret() string {
-	return a.config.WebhookSecret
 }

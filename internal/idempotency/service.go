@@ -13,20 +13,19 @@ const (
 	defaultTTL = 7 * 24 * time.Hour // keep events for 7 days
 )
 
-// Service implements idempotency checking using Redis
 type service struct {
 	redis redis.Cmdable
 }
 
 // NewService creates a new idempotency service
-func NewService(redisClient redis.Cmdable) Service {
-	return &service{
+func NewService(redisClient redis.Cmdable) service {
+	return service{
 		redis: redisClient,
 	}
 }
 
 // IsProcessed checks if a webhook delivery has already been processed
-func (s *service) IsProcessed(ctx context.Context, deliveryID string) (bool, error) {
+func (s service) IsProcessed(ctx context.Context, deliveryID string) (bool, error) {
 	key := s.buildKey(deliveryID)
 
 	exists, err := s.redis.Exists(ctx, key).Result()
@@ -38,7 +37,7 @@ func (s *service) IsProcessed(ctx context.Context, deliveryID string) (bool, err
 }
 
 // MarkProcessed marks a webhook delivery as processed
-func (s *service) MarkProcessed(ctx context.Context, deliveryID string, ttl time.Duration) error {
+func (s service) MarkProcessed(ctx context.Context, deliveryID string, ttl time.Duration) error {
 	if ttl == 0 {
 		ttl = defaultTTL
 	}
@@ -54,6 +53,6 @@ func (s *service) MarkProcessed(ctx context.Context, deliveryID string, ttl time
 	return nil
 }
 
-func (s *service) buildKey(deliveryID string) string {
+func (s service) buildKey(deliveryID string) string {
 	return keyPrefix + deliveryID
 }

@@ -23,9 +23,6 @@ type Client struct {
 	client *asynq.Client
 }
 
-// Ensure Client implements QueueClient interface
-var _ QueueClient = (*Client)(nil)
-
 func NewClient(redisAddr, redisPassword string, redisDB int) *Client {
 	client := asynq.NewClient(asynq.RedisClientOpt{
 		Addr:     redisAddr,

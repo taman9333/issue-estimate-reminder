@@ -32,7 +32,7 @@ func (a *Auth) GenerateJWT() (string, error) {
 	claims := jwt.MapClaims{
 		"iss": a.config.AppID,
 		"iat": now.Unix(),
-		"exp": now.Add(10 * time.Minute).Unix(), // TODO: check later when this expires
+		"exp": now.Add(10 * time.Minute).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

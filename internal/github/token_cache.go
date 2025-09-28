@@ -7,28 +7,29 @@ import (
 	"time"
 
 	"github.com/google/go-github/v74/github"
+	"github.com/taman9333/issue-estimate-reminder/internal/app"
 )
 
 type TokenCache struct {
 	mu     sync.RWMutex
 	tokens map[int64]*CachedToken
-	auth   AuthInterface
+	auth   *Auth
 }
 
 type CachedToken struct {
 	Token     string
 	ExpiresAt time.Time
-	Client    GitHubClientInterface
+	Client    app.GitHubCommenter
 }
 
-func NewTokenCache(auth AuthInterface) *TokenCache {
+func NewTokenCache(auth *Auth) *TokenCache {
 	return &TokenCache{
 		tokens: make(map[int64]*CachedToken),
 		auth:   auth,
 	}
 }
 
-func (tc *TokenCache) GetInstallationClient(installationID int64) (GitHubClientInterface, error) {
+func (tc *TokenCache) GetInstallationClient(installationID int64) (app.GitHubCommenter, error) {
 	tc.mu.RLock()
 	cached, exists := tc.tokens[installationID]
 	tc.mu.RUnlock()
@@ -63,7 +64,7 @@ func (tc *TokenCache) GetInstallationClient(installationID int64) (GitHubClientI
 	return client, nil
 }
 
-func (tc *TokenCache) createNewInstallationClient(installationID int64) (GitHubClientInterface, string, time.Time, error) {
+func (tc *TokenCache) createNewInstallationClient(installationID int64) (app.GitHubCommenter, string, time.Time, error) {
 	jwt, err := tc.auth.GenerateJWT()
 	if err != nil {
 		return nil, "", time.Time{}, fmt.Errorf("failed to generate JWT: %v", err)

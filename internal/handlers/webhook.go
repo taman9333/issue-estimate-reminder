@@ -1,25 +1,30 @@
 package handlers
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/taman9333/issue-estimate-reminder/internal/app"
 	"github.com/taman9333/issue-estimate-reminder/internal/queue"
 	"github.com/taman9333/issue-estimate-reminder/internal/utils"
 )
 
-type WebhookHandler struct {
-	app         app.AppInterface
-	queueClient queue.QueueClient
+//go:generate mockgen -destination=../../test/mocks/handlersmocks/handlers_mocks.go -package=handlersmocks . WebhookEnqueuer
+type WebhookEnqueuer interface {
+	EnqueueWebhook(ctx context.Context, payload *queue.WebhookPayload) error
 }
 
-func NewWebhookHandler(app app.AppInterface,
-	queueClient queue.QueueClient) *WebhookHandler {
+type WebhookHandler struct {
+	webhookSecret string
+	queueClient   WebhookEnqueuer
+}
+
+func NewWebhookHandler(webhookSecret string,
+	queueClient WebhookEnqueuer) *WebhookHandler {
 	return &WebhookHandler{
-		app:         app,
-		queueClient: queueClient,
+		webhookSecret: webhookSecret,
+		queueClient:   queueClient,
 	}
 }
 
@@ -43,7 +48,7 @@ func (h *WebhookHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !utils.VerifyWebhookSignature(body, r.Header.Get("X-Hub-Signature-256"), h.app.GetWebhookSecret()) {
+	if !utils.VerifyWebhookSignature(body, r.Header.Get("X-Hub-Signature-256"), h.webhookSecret) {
 		log.Println("Invalid webhook signature")
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
 		return
