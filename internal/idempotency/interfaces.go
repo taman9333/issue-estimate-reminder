@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-//go:generate mockgen -source=interfaces.go -destination=../../test/mocks/idempotency_mocks.go -package=mocks
+//go:generate mockgen -source=interfaces.go -destination=../../test/mocks/idempotencymocks/idempotency_mocks.go -package=idempotencymocks
 
 // Service handles webhook idempotency using delivery IDs
 type Service interface {

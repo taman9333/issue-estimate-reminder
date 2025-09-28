@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/taman9333/issue-estimate-reminder/internal/config"
-	"github.com/taman9333/issue-estimate-reminder/test/mocks"
+	"github.com/taman9333/issue-estimate-reminder/test/mocks/githubmocks"
 	"github.com/taman9333/issue-estimate-reminder/test/testutils"
 	"go.uber.org/mock/gomock"
 )
@@ -20,7 +20,7 @@ func TestApp_HandleIssueOpened_WithEstimate(t *testing.T) {
 		Port:          "8080",
 	}
 
-	mockGitHubFactory := mocks.NewMockGitHubFactoryInterface(ctrl)
+	mockGitHubFactory := githubmocks.NewMockGitHubFactoryInterface(ctrl)
 	app := NewWithGitHubClient(cfg, mockGitHubFactory)
 
 	// Create issue with estimate
@@ -45,8 +45,8 @@ func TestApp_HandleIssueOpened_WithoutEstimate_Success(t *testing.T) {
 		Port:          "8080",
 	}
 
-	mockGitHubFactory := mocks.NewMockGitHubFactoryInterface(ctrl)
-	mockGitHubClient := mocks.NewMockGitHubClientInterface(ctrl)
+	mockGitHubFactory := githubmocks.NewMockGitHubFactoryInterface(ctrl)
+	mockGitHubClient := githubmocks.NewMockGitHubClientInterface(ctrl)
 	app := NewWithGitHubClient(cfg, mockGitHubFactory)
 
 	// Create issue without estimate

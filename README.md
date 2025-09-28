@@ -18,7 +18,7 @@ Since GitHub's webhook delivery is at-least-once, same event can arrive multiple
 
 ![Idempotency Protection](images/idempotency.png)
 
-### **Not Implemented: Queue-Based Background Processing**
+### **Queue-Based Background Processing**
 
 We might face 2 problems with the current implementation:
 1. **GitHub API is down**: then we will not be able to post a comment on the issue & event will be lost

@@ -1,28 +1,25 @@
 package handlers
 
 import (
-	"encoding/json"
 	"io"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/google/go-github/v74/github"
 	"github.com/taman9333/issue-estimate-reminder/internal/app"
-	"github.com/taman9333/issue-estimate-reminder/internal/idempotency"
+	"github.com/taman9333/issue-estimate-reminder/internal/queue"
 	"github.com/taman9333/issue-estimate-reminder/internal/utils"
 )
 
 type WebhookHandler struct {
 	app         app.AppInterface
-	idempotency idempotency.Service
+	queueClient queue.QueueClient
 }
 
 func NewWebhookHandler(app app.AppInterface,
-	idempotencySvc idempotency.Service) *WebhookHandler {
+	queueClient queue.QueueClient) *WebhookHandler {
 	return &WebhookHandler{
 		app:         app,
-		idempotency: idempotencySvc,
+		queueClient: queueClient,
 	}
 }
 
@@ -61,49 +58,18 @@ func (h *WebhookHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload github.IssuesEvent
-	if err := json.Unmarshal(body, &payload); err != nil {
-		log.Printf("Error unmarshaling payload: %v", err)
-		http.Error(w, "Error parsing payload", http.StatusBadRequest)
+	payload := &queue.WebhookPayload{
+		DeliveryID: deliveryID,
+		EventType:  eventType,
+		Payload:    body,
+	}
+
+	if err := h.queueClient.EnqueueWebhook(r.Context(), payload); err != nil {
+		log.Printf("Failed to enqueue webhook: %v", err)
+		http.Error(w, "Failed to queue", http.StatusInternalServerError)
 		return
 	}
 
-	if payload.GetAction() != "opened" {
-		log.Printf("Ignoring issues %s action", payload.GetAction())
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	// Check idempotency before processing
-	processed, err := h.idempotency.IsProcessed(r.Context(), deliveryID)
-	if err != nil {
-		log.Printf("Error checking idempotency: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	if processed {
-		log.Printf("Webhook delivery %s already processed, skipping", deliveryID)
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	log.Printf("Processing new issue #%d: %s",
-		payload.GetIssue().GetNumber(),
-		payload.GetIssue().GetTitle())
-
-	if err := h.app.HandleIssueOpened(&payload); err != nil {
-		log.Printf("Error handling issue opened event: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	// Mark as processed after successful handling
-	if err := h.idempotency.MarkProcessed(r.Context(), deliveryID, 7*24*time.Hour); err != nil {
-		log.Printf("Error marking delivery as processed: %v", err)
-	} else {
-		log.Printf("Marked delivery %s as processed", deliveryID)
-	}
-
+	log.Printf("Queued webhook %s for processing", deliveryID)
 	w.WriteHeader(http.StatusOK)
 }

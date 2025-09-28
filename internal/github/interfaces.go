@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-github/v74/github"
 )
 
-//go:generate mockgen -source=interfaces.go -destination=../../test/mocks/github_mocks.go -package=mocks
+//go:generate mockgen -source=interfaces.go -destination=../../test/mocks/githubmocks/github_mocks.go -package=githubmocks
 
 // GitHubClientInterface defines what we need from GitHub client
 type GitHubClientInterface interface {

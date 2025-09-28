@@ -75,3 +75,24 @@ func CreateInstallationToken(token string) *github.InstallationToken {
 		Token: &token,
 	}
 }
+
+// CreateWebhookPayload create a test webhook payload
+func CreateWebhookPayload(action string, issueBody string) map[string]interface{} {
+	return map[string]interface{}{
+		"action": action,
+		"issue": map[string]interface{}{
+			"number": 1,
+			"title":  "Test Issue",
+			"body":   issueBody,
+		},
+		"repository": map[string]interface{}{
+			"name": "test-repo",
+			"owner": map[string]interface{}{
+				"login": "test-owner",
+			},
+		},
+		"installation": map[string]interface{}{
+			"id": 67890,
+		},
+	}
+}

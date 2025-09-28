@@ -11,13 +11,43 @@ services:
       - ./.env
     volumes:
       - .:/app
-      - ./app.pem:/app/app.pem:ro
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
+    command: go run cmd/server/main.go
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./.env
+    volumes:
+      - ./app.pem:/app/app.pem:ro
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: go run cmd/worker/main.go
+
+  # Monitoring UI
+  asynqmon:
+    image: hibiken/asynqmon
+    platform: linux/amd64
+    ports:
+      - "8081:8080"
+    environment:
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - redis
+    networks:
+      - app-network
 
   redis:
     image: redis:7-alpine
